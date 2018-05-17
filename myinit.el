@@ -69,18 +69,14 @@
 
 
 
-;; Linum plugin
-(require 'linum)          ;; call Linum
-(line-number-mode   t)    ;; show line number in mode-line
-(global-linum-mode  t)    ;; show line numbers in all buffers
-(column-number-mode t)    ;; show column number in mode-line
-(setq linum-format " %d") ;; set the numbering format for strings
-
-
-
-(require 'linum-highlight-current-line-number)
-(setq linum-format 'linum-highlight-current-line-number)
-
+;; show relative linum numbers
+(require 'linum-relative)
+(linum-relative-global-mode t)
+(setq linum-relative-current-symbol "")  ;;set current line number
+;;set format
+(if (display-graphic-p)
+    (setq linum-relative-format " %3s")
+    (setq linum-relative-format " %3s\u2502 "))
 
 
 ;;Interactively Do Things mode
@@ -112,7 +108,7 @@
 (defalias 'list-buffers 'ibuffer) ;;separate list of buffers when clicked C-x C-b
 ;;(iswitchb-mode 1)
 ;; disable dired buffer
-(put 'dired-find-alternate-file 'disabled nil)
+(put 'dired-find-alternate-file 'disabled nil) ;; hide dired buffer
 
 
 
@@ -201,5 +197,5 @@
  ;; If there is more than one, they won't work right.
  )
 
- 
+
 (provide 'myinit)

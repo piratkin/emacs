@@ -1,11 +1,3 @@
-;; set proxy
-(setq url-proxy-services
-    '(("no_proxy" . "^\\(localhost\\|192\\.168\\.*\\|10.*\\)")
-      ("http" . "192.168.2.7:3128")
-      ("https" . "192.168.2.7:3128")))
-
-(setq package-check-signature nil)
-
 ;;set where found plugginsy
 (add-to-list 'load-path "~/.emacs.d/lisp")
 (add-to-list 'load-path "~/.emacs.d/custom")

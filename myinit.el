@@ -1,7 +1,7 @@
 ;;set where found plugginsy
 (add-to-list 'load-path "~/.emacs.d/lisp")
-(add-to-list 'load-path "~/.emacs.d/custom")
-;;(require ‘init)
+
+
 
 (load "package")
 (require 'package)
@@ -11,28 +11,63 @@
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize)
 
+
+
 ;; set theme
 (load-theme 'wombat)
+;;custom name
+(setq frame-title-format "PiMax")
+;; turn off line wrapping
+(setq-default truncate-lines 1)
+;; Display file size/time in mode-line
+(setq display-time-24hr-format t) ;; 24-hour time format in mode-line
+(display-time-mode             t) ;; show hours in mode-line
+(size-indication-mode          t) ;; file size in percentages
+;; small cursor
+(set-default 'cursor-type '(hbar . 3))
+;; set cursor color
+(set-cursor-color "#ffffff")
+;; hide cursor if window not have focus
+(setq-default cursor-in-non-selected-windows nil)
+;;hidi scrolbar
+(menu-bar-mode -1)
+;;hide toolbar
+(tool-bar-mode -1)
+;;hide scrollbar
+(scroll-bar-mode -1)
+;;sound bell off
+(setq visible-bell 1)
+;; Indent settings
+(setq c-default-style "stroustrup") ;;indent style in c/c++ code
+(setq-default indent-tabs-mode nil) ;;disable the ability to indent TAB
+(setq-default tab-width          4) ;;tab width - 4 whitespace
+(setq-default c-basic-offset     4)
+(setq-default standart-indent    4) ;;standard width of indent - 4 whitespace
+;; Highlight search resaults
+(setq search-highlight        t)
+(setq query-replace-highlight t)
+
+
+
+;;restore last session on startup
+(desktop-save-mode 1)
+;;delete selection
+(delete-selection-mode t)
+;;better buffer rendering
+(setq redisplay-dont-pause t)
+;; Clipboard settings
+(setq x-select-enable-clipboard t)
+;;set short confirm command
+(fset 'yes-or-no-p 'y-or-n-p)
+
+
 
 (require 'whitespace)
 (setq whitespace-style '(face empty tabs lines-tail trailing))
 (setq whitespace-line-column 80)
 (global-whitespace-mode t)
 
-;; turn off line wrapping
-(setq-default truncate-lines 1)
 
-;;custom name
-(setq frame-title-format "PiMax")
-
-;;set short confirm command
-(fset 'yes-or-no-p 'y-or-n-p)
-
-;;show character position in string
-(column-number-mode)
-
-;;(setq-default indicate-empty-lines t) ;;no glyphs next to a line with a line number
-;;(setq-default indicate-buffer-boundaries 'left) ;; indication only on the left
 
 ;; Linum plugin
 (require 'linum)          ;; call Linum
@@ -41,8 +76,12 @@
 (column-number-mode t)    ;; show column number in mode-line
 (setq linum-format " %d") ;; set the numbering format for strings
 
+
+
 (require 'linum-highlight-current-line-number)
 (setq linum-format 'linum-highlight-current-line-number)
+
+
 
 ;;Interactively Do Things mode
 (require 'ido)
@@ -52,67 +91,30 @@
 (setq ido-vitrual-buffers      t)
 (setq ido-enable-flex-matching t)
 
-;; Display file size/time in mode-line
-(setq display-time-24hr-format t) ;; 24-hour time format in mode-line
-(display-time-mode             t) ;; show hours in mode-line
-(size-indication-mode          t) ;; file size in percentages
+
 
 ;;highlight blocks and quots
 (require 'paren)
 (show-paren-mode 1)
 ;;(setq show-paren-style 'expression)
 
+
+
 ;;auto-close quotes and parentheses
 ;;(require 'autopair)
 ;;(autopair-global-mode 1)
+
+
 
 ;; Buffer Selection and ibuffer settings
 (require 'bs)
 (require 'ibuffer)
 (defalias 'list-buffers 'ibuffer) ;;separate list of buffers when clicked C-x C-b
 ;;(iswitchb-mode 1)
-
 ;; disable dired buffer
 (put 'dired-find-alternate-file 'disabled nil)
 
-;; small cursor
-(set-default 'cursor-type '(hbar . 3))
-;; set cursor color
-(set-cursor-color "#ffffff")
-;; hide cursor if window not have focus
-(setq-default cursor-in-non-selected-windows nil)
 
-;;hidi scrolbar
-(menu-bar-mode -1)
-;;hide toolbar
-(tool-bar-mode -1)
-;;hide scrollbar
-(scroll-bar-mode -1)
-;;sound bell off
-(setq visible-bell 1)
-
-;;delete selection
-(delete-selection-mode t)
-
-;;better buffer rendering
-(setq redisplay-dont-pause t)
-
-;; Clipboard settings
-(setq x-select-enable-clipboard t)
-
-;; Indent settings
-(setq c-default-style "stroustrup") ;;indent style in c/c++ code
-(setq-default indent-tabs-mode nil) ;;disable the ability to indent TAB
-(setq-default tab-width          4) ;;tab width - 4 whitespace
-(setq-default c-basic-offset     4)
-(setq-default standart-indent    4) ;;standard width of indent - 4 whitespace
-
-;; Highlight search resaults
-(setq search-highlight        t)
-(setq query-replace-highlight t)
-
-;;restore last session on startup
-(desktop-save-mode 1)
 
 ;; show invalid whitespace
 ;;(global-set-key "\C-c_w" 'whitespace-mode)

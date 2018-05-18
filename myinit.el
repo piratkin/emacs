@@ -1,16 +1,28 @@
 ;;set where found plugginsy
-(add-to-list 'load-path "~/.emacs.d/lisp")
+(add-to-list 'load-path "~/emacs.git/lisp")
 
-
+;; list the packages you want
+(setq package-list '(package whitespace linum-relative ido paren auto-complete auto-complete-clang-async bs ibuffer))
 
 (load "package")
 (require 'package)
+(add-to-list 'package-archives '("elpa" . "http://tromey.com/elpa/") t)
 (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+;; activate all the packages (in particular autoloads)
 (package-initialize)
 
+
+; fetch the list of packages available 
+(unless package-archive-contents
+  (package-refresh-contents))
+
+; install the missing packages
+(dolist (package package-list)
+  (unless (package-installed-p package)
+    (package-install package)))
 
 
 ;; set theme
@@ -71,12 +83,37 @@
 
 ;; show relative linum numbers
 (require 'linum-relative)
-(linum-relative-global-mode t)
-(setq linum-relative-current-symbol "")  ;;set current line number
-;;set format
-(if (display-graphic-p)
+
+;;cbf
+(defun linum-relative-set-on ()
+  (interactive)
+  (message "Activated linum mode")
+  (linum-relative-mode t)
+  ;;(setq linum-relative-backend 'display-line-numbers-mode) ;;use v26 for smooth performance
+  (setq linum-relative-current-symbol "") ;;set current line number
+  (set-face-foreground 'linum "#008080") ;;linum relative foreground color
+  (if (display-graphic-p) ;;set format
     (setq linum-relative-format " %3s")
-    (setq linum-relative-format " %3s\u2502 "))
+    (setq linum-relative-format " %3s|")))
+
+;;set hooks
+(add-hook 'emacs-lisp-mode-hook 'linum-relative-set-on)
+(add-hook 'c-mode-hook 'linum-relative-set-on)
+(add-hook 'c++-mode-hook 'linum-relative-set-on)
+(add-hook 'cc-mode-hook 'linum-relative-set-on)
+(add-hook 'php-mode-hook 'linum-relative-set-on)
+(add-hook 'python-mode-hook 'linum-relative-set-on)
+(add-hook 'java-mode-hook 'linum-relative-set-on)
+(add-hook 'perl-mode-hook 'linum-relative-set-on)
+(add-hook 'shell-mode-hook 'linum-relative-set-on)
+(add-hook 'sh-mode-hook 'linum-relative-set-on)
+(add-hook 'sh-lisp-mode-hook 'linum-relative-set-on)
+(add-hook 'xml-mode-hook 'linum-relative-set-on)
+(add-hook 'css-mode-hook 'linum-relative-set-on)
+(add-hook 'javascript-mode-hook 'linum-relative-set-on)
+(add-hook 'makefile-mode-hook 'linum-relative-set-on)
+(add-hook 'cmake-mode-hook 'linum-relative-set-on)
+
 
 
 ;;Interactively Do Things mode
@@ -91,8 +128,72 @@
 
 ;;highlight blocks and quots
 (require 'paren)
-(show-paren-mode 1)
-;;(setq show-paren-style 'expression)
+(show-paren-mode 1) ;; highlight quots
+;;(setq show-paren-style 'expression) ;;highlight curent block
+
+
+(require 'auto-complete)
+(ac-config-default)
+(global-auto-complete-mode)
+
+
+(require 'auto-complete-clang-async)
+;; (setq ac-clang-flags
+;;   (mapcar (lambda (item)(concat "-I" item))
+;;     (split-string "
+;;       /cygdrive/d/projects/fcgi/src/include
+;;       /usr/include
+;;       /usr/i586-pc-msdosdjgpp/sys-include
+;;       /usr/i686-pc-cygwin/sys-root/usr/include
+;;       /usr/i686-w64-mingw32/sys-root/mingw/include
+;;       /usr/x86_64-w64-mingw32/sys-root/mingw/include")))
+
+(defun ac-cc-mode-setup ()
+  (setq ac-clang-complete-executable "~/.emacs.d/clang-complete")
+  (setq ac-sources '(ac-source-clang-async))
+  (ac-clang-launch-completion-process))
+
+(defun my-ac-config ()
+  (add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
+  (add-hook 'auto-complete-mode-hook 'ac-common-setup)
+  (global-auto-complete-mode t))
+
+(my-ac-config)
+
+;;autocomplete
+;; (require 'ac-clang)
+;; (require 'cpputils-cmake)
+;; (global-auto-complete-mode t)
+;; (add-hook 'c-mode-common-hook
+;;   (lambda () (if (derived-mode-p 'c-mode 'c++-mode)
+;;     (cppcm-reload-all))))
+;; ;; OPTIONAL, somebody reported that they can use this package with Fortran
+;; (add-hook 'c90-mode-hook (lambda () (cppcm-reload-all)))
+;; ;; OPTIONAL, avoid typing full path when starting gdb
+;; (global-set-key (kbd "C-c C-g")
+;;   '(lambda ()
+;;     (interactive)
+;;     (gud-gdb (concat "gdb --fullname " (cppcm-get-exe-path-current-buffer)))))
+;; ;; OPTIONAL, some users need specify extra flags forwarded to compiler
+;; (setq cppcm-extra-preprocss-flags-from-user '("-I/usr/src/linux/include" "-DNDEBUG"))
+
+;;select using modes
+;;(add-to-list 'ac-modes 'sql-mode) ;;or ;;(setq ac-modes '(c++-mode sql-mode))
+
+;;(ac-clang-server-type 'debug)
+;;(setq ac-clang-clang-translation-unit-flags FLAG-STRING)
+;;(setq ac-clang-clang-complete-at-flags FLAG-STRING)
+;;(setq ac-clang-cflags CFLAGS)
+;;(ac-clang-update-clang-parameters)
+
+;;set server resident
+;;(ac-clang-initialize)
+;;activate after set CFLAGS
+;;(ac-clang-activate-after-modify) ;; or
+;;(ac-clang-activate)
+;;(setq ac-clang-debug-log-buffer-p t)
+;;(setq ac-clang-debug-log-buffer-size (* 1024 1000))
+;;(setq ac-clang-debug-profiler-p t)
 
 
 
@@ -109,6 +210,8 @@
 ;;(iswitchb-mode 1)
 ;; disable dired buffer
 (put 'dired-find-alternate-file 'disabled nil) ;; hide dired buffer
+
+
 
 
 

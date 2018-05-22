@@ -2,7 +2,7 @@
 (add-to-list 'load-path "~/emacs.git/lisp")
 
 ;; list the packages you want
-(setq package-list '(package whitespace linum-relative ido paren auto-complete auto-complete-clang-async bs ibuffer))
+(setq package-list '(package whitespace linum-relative ido paren bs ibuffer buffer-move auto-complete auto-complete-c-headers yasnippet company company-irony company-c-headers))
 
 (load "package")
 (require 'package)
@@ -15,7 +15,7 @@
 (package-initialize)
 
 
-; fetch the list of packages available 
+; fetch the list of packages available
 (unless package-archive-contents
   (package-refresh-contents))
 
@@ -42,7 +42,7 @@
 ;; hide cursor if window not have focus
 (setq-default cursor-in-non-selected-windows nil)
 ;;hidi scrolbar
-(menu-bar-mode -1)
+;;(menu-bar-mode -1)
 ;;hide toolbar
 (tool-bar-mode -1)
 ;;hide scrollbar
@@ -71,6 +71,8 @@
 (setq x-select-enable-clipboard t)
 ;;set short confirm command
 (fset 'yes-or-no-p 'y-or-n-p)
+;;
+(setq ac-disable-faces nil)
 
 
 
@@ -132,12 +134,177 @@
 ;;(setq show-paren-style 'expression) ;;highlight curent block
 
 
+
+(require 'buffer-move)
+(global-set-key (kbd "<C-S-up>")     'buf-move-up)
+(global-set-key (kbd "<C-S-down>")   'buf-move-down)
+(global-set-key (kbd "<C-S-left>")   'buf-move-left)
+(global-set-key (kbd "<C-S-right>")  'buf-move-right)
+;;(setq buffer-move-stay-after-swap t)
+;;(setq buffer-move-behavior 'move)
+
+
+
+;;start yasnippet with emacs
+(require 'yasnippet)
+;; (setq yas-snippet-dirs
+;;       '("~/.emacs.d/snippets"                 ;; personal snippets
+;;         "/path/to/some/collection/"           ;; foo-mode and bar-mode snippet collection
+;;         "/path/to/yasnippet/yasmate/snippets" ;; the yasmate collection
+;;         ))
+(yas-global-mode 1)
+
+
+
+;;start auto-complete with emacs
 (require 'auto-complete)
+;;do default config for auto-complete
+(require 'auto-complete-config)
 (ac-config-default)
-(global-auto-complete-mode)
+
+;;(setq ac-auto-start nil)
+;;(setq ac-auto-show-menu nil)
+;;(setq ac-menu-height 20)
+;;(setq ac-use-fuzzy t)
+;;(setq ac-ignore-case 'smart)
+
+;;let's define a function which initializes auto-complete-c-headers and gets called for c/c++ hooks
+;;#gcc -xc++ -E -v -
+(defun my:ac-c-header-init ()
+  (require 'auto-complete-c-headers)
+  (add-to-list 'ac-sources 'ac-source-c-headers)
+  (setq achead:include-directories
+    (append '("/cygdrive/d/projects/fcgi/src/include"
+              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++"
+              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/x86_64-pc-cygwin"
+              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/backward"
+              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include"
+              "/usr/include/w32api"
+              "/usr/include")
+            achead:include-directories)))
+;;now let's call this function from c/c++ hooks
+(add-hook 'c++-mode-hook 'my:ac-c-header-init)
+(add-hook 'c-mode-hook 'my:ac-c-header-init)
 
 
-(require 'auto-complete-clang-async)
+
+;; ; turn on Semantic
+;; (semantic-mode 1)
+;; ; let's define a function which adds semantic as a suggestion backend to auto complete
+;; ; and hook this function to c-mode-common-hook
+;; (defun my:add-semantic-to-autocomplete()
+;;   (add-to-list 'ac-sources 'ac-source-semantic)
+;; )
+;; (add-hook 'c-mode-common-hook 'my:add-semantic-to-autocomplete)
+
+
+
+;; ;; turn on ede mode
+;; (global-ede-mode 1)
+;; ;; create a project for our program.
+;; (ede-cpp-root-project "fcgi project" :file "/cygdrive/d/projects/fcgi/src/main.cpp" :include-path '(quote ("/include" "../include")))
+;; ;; you can use system-include-path for setting up the system header file locations.
+;; ;; turn on automatic reparsing of open buffers in semantic
+;; ;;(global-semantic-idle-scheduler-mode 1)
+
+(require 'company)
+(add-hook 'c-mode-common-hook 'company-mode)
+(add-hook 'emacs-lisp-mode-hook 'company-mode)
+
+(setq company-c-headers-path-user '("/cygdrive/d/projects/fcgi/src/include"))
+
+(eval-after-load 'company
+  '(add-to-list 'company-backends 'company-irony 'company-c-headers))
+
+;;(require 'irony)
+
+;;(add-hook 'c++-mode-hook 'irony-mode)
+;;(add-hook 'c-mode-hook 'irony-mode)
+;;(add-hook 'objc-mode-hook 'irony-mode)
+
+;;Windows performance tweaks
+;;(when (boundp 'w32-pipe-read-delay)
+;;  (setq w32-pipe-read-delay 0))
+;; Set the buffer size to 64K on Windows (from the original 4K)
+;;(when (boundp 'w32-pipe-buffer-size)
+;;  (setq irony-server-w32-pipe-buffer-size (* 64 1024)))
+
+;;(require 'company)
+;;(add-hook 'after-init-hook 'global-company-mode)
+;;(require 'company-irony)
+;;(require 'company-c-headers)
+;;(require 'company-anaconda)
+
+;;(eval-after-load 'company
+;;        '(add-to-list 'company-backends 'company-irony))
+
+;;(eval-after-load 'company
+;;    (progn
+;;	    '(add-to-list 'company-backends 'company-anaconda)
+;;        '(add-to-list 'company-backends 'company-c-headers)
+;;        '(add-to-list 'company-backends 'company-irony)))
+;;(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
+  
+;; replace the `completion-at-point' and `complete-symbol' bindings in
+;; irony-mode's buffers by irony-mode's function
+;;(defun my-irony-mode-hook ()
+;;  (define-key irony-mode-map [remap completion-at-point]
+;;    'irony-completion-at-point-async)
+;;  (define-key irony-mode-map [remap complete-symbol]
+;;    'irony-completion-at-point-async))
+;;(add-hook 'irony-mode-hook 'my-irony-mode-hook)
+
+;;(add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
+
+
+
+;; ; set LD_LIBRARY_PATH
+;; (setenv "LD_LIBRARY_PATH" "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/")
+;; ; load irony-mode
+;; (add-to-list 'load-path (expand-file-name "~/.emacs.d/irony-mode/elisp/"))
+;; (require 'irony)
+;; ; also enable ac plugin
+;; (irony-enable 'ac)
+;; ; define a function to start irony mode for c/c++ modes
+;; (defun my:irony-enable()
+;;   (when (member major-mode irony-known-modes)
+;;     (irony-mode 1)))
+;; (add-hook 'c++-mode-hook 'my:irony-enable)
+;; (add-hook 'c-mode-hook 'my:irony-enable)
+
+
+
+
+
+
+
+;;; start flymake-google-cpplint-load
+;;; let's define a function for flymake initialization
+;;(defun my:flymake-google-init ()
+;;  (require 'flymake-google-cpplint)
+;;  (custom-set-variables
+;;   '(flymake-google-cpplint-command "/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin/cpplint"))
+;;  (flymake-google-cpplint-load)
+;;)
+;;(add-hook 'c-mode-hook 'my:flymake-google-init)
+;;(add-hook 'c++-mode-hook 'my:flymake-google-init)
+;;
+;;; start google-c-style with emacs
+;;(require 'google-c-style)
+;;(add-hook 'c-mode-common-hook 'google-set-c-style)
+;;(add-hook 'c-mode-common-hook 'google-make-newline-indent)
+
+;; (require 'semantic-gcc)
+;; (require 'semanticdb)
+;; (global-semanticdb-minor-mode 1)
+;; (require 'semanticdb-global)
+;; (defun my-semantic-hook ()
+;; (semanticdb-enable-gnu-global-databases 'c-mode)
+;; (semanticdb-enable-gnu-global-databases 'c++-mode)
+
+
+
+;;(require 'auto-complete-clang-async)
 ;; (setq ac-clang-flags
 ;;   (mapcar (lambda (item)(concat "-I" item))
 ;;     (split-string "
@@ -148,17 +315,17 @@
 ;;       /usr/i686-w64-mingw32/sys-root/mingw/include
 ;;       /usr/x86_64-w64-mingw32/sys-root/mingw/include")))
 
-(defun ac-cc-mode-setup ()
-  (setq ac-clang-complete-executable "~/.emacs.d/clang-complete")
-  (setq ac-sources '(ac-source-clang-async))
-  (ac-clang-launch-completion-process))
+;; (defun ac-cc-mode-setup ()
+;;   (setq ac-clang-complete-executable "~/.emacs.d/clang-complete")
+;;   (setq ac-sources '(ac-source-clang-async))
+;;   (ac-clang-launch-completion-process))
 
-(defun my-ac-config ()
-  (add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
-  (add-hook 'auto-complete-mode-hook 'ac-common-setup)
-  (global-auto-complete-mode t))
+;; (defun my-ac-config ()
+;;   (add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
+;;   (add-hook 'auto-complete-mode-hook 'ac-common-setup)
+;;   (global-auto-complete-mode t))
 
-(my-ac-config)
+;; (my-ac-config)
 
 ;;autocomplete
 ;; (require 'ac-clang)

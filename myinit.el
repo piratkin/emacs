@@ -1,12 +1,13 @@
 ;;set where found plugginsy
 (add-to-list 'load-path "~/emacs.git/lisp")
-
 ;; list the packages you want
-;;(setq package-list '(package whitespace linum-relative ido paren bs ibuffer buffer-move auto-complete auto-complete-c-headers yasnippet company company-irony company-c-headers magit))
 (setq package-list '(
     package
+    magit
     whitespace
     linum-relative
+	;font-lock
+	highlight-numbers
     ido
     paren
     bs
@@ -17,44 +18,79 @@
     cl-lib
     json
     ;auto-complete
-    company-irony-c-headers
+    ;auto-complete-c-headers
     company
-    company-c-headers
+	company-quickhelp
+    ;company-c-headers
+	company-irony-c-headers
     company-irony
     irony
-    flycheck))
-
+    irony-eldoc
+    flycheck
+	flycheck-pos-tip
+    flycheck-irony))
+;; setup repos
 (load "package")
 (require 'package)
-(add-to-list 'package-archives '("elpa" . "http://tromey.com/elpa/") t)
-(add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/") t)
+(add-to-list 'package-archives '("elpa"  . "http://tromey.com/elpa/") t)
+(add-to-list 'package-archives '("gnu"   . "http://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (add-to-list 'package-archives '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+(add-to-list 'package-archives '("org"   . "http://orgmode.org/elpa/") t)
 ;; activate all the packages (in particular autoloads)
 (package-initialize)
-
-
 ; fetch the list of packages available
 (unless package-archive-contents
   (package-refresh-contents))
-
 ; install the missing packages
 (dolist (package package-list)
   (unless (package-installed-p package)
     (package-install package)))
 
 
+
+
+
+;;reverse-input-method RET russian-computer RET
+(defun reverse-input-method (input-method)
+  "Build the reverse mapping of single letters from INPUT-METHOD."
+  (interactive
+   (list (read-input-method-name "Use input method (default current): ")))
+  (if (and input-method (symbolp input-method))
+      (setq input-method (symbol-name input-method)))
+  (let ((current current-input-method)
+        (modifiers '(nil (control) (meta) (control meta))))
+    (when input-method
+      (activate-input-method input-method))
+    (when (and current-input-method quail-keyboard-layout)
+      (dolist (map (cdr (quail-map)))
+        (let* ((to (car map))
+               (from (quail-get-translation
+                      (cadr map) (char-to-string to) 1)))
+          (when (and (characterp from) (characterp to))
+            (dolist (mod modifiers)
+              (define-key local-function-key-map
+                (vector (append mod (list from)))
+                (vector (append mod (list to)))))))))
+    (when input-method
+      (activate-input-method current))))
+
+
+
+
+
+
+
 ;; set theme
 (load-theme 'wombat)
 ;;custom name
-(setq frame-title-format "PiMax")
+(setq frame-title-format "GNU Emacs: %b")
 ;; turn off line wrapping
 (setq-default truncate-lines 1)
 ;; Display file size/time in mode-line
 (setq display-time-24hr-format t) ;; 24-hour time format in mode-line
-(display-time-mode             t) ;; show hours in mode-line
-(size-indication-mode          t) ;; file size in percentages
+(display-time-mode t) ;; show hours in mode-line
+(size-indication-mode t) ;; file size in percentages
 ;; small cursor
 (set-default 'cursor-type '(hbar . 3))
 ;; set cursor color
@@ -62,7 +98,7 @@
 ;; hide cursor if window not have focus
 (setq-default cursor-in-non-selected-windows nil)
 ;;hidi scrolbar
-;;(menu-bar-mode -1)
+(menu-bar-mode -1)
 ;;hide toolbar
 (tool-bar-mode -1)
 ;;hide scrollbar
@@ -75,11 +111,29 @@
 (setq-default tab-width 4) ;;tab width - 4 whitespace
 (setq-default c-basic-offset 4)
 (setq-default standart-indent 4) ;;standard width of indent - 4 whitespace
-;; Highlight search resaults
+;; highlight search resaults
 (setq search-highlight t)
 (setq query-replace-highlight t)
 ;;hide welcome screen
 (setq inhibit-startup-screen t)
+;;highlight the same words on the screen
+;(add-hook 'prog-mode-hook #'semantic-idle-local-symbol-highlight-mode)
+;;highlight-numbers
+(add-hook 'prog-mode-hook #'highlight-numbers-mode)
+
+
+
+
+;;
+;;font-lock
+;;
+(require 'font-lock)
+(global-font-lock-mode             t)
+(setq font-lock-maximum-decoration t)
+
+
+
+
 
 
 
@@ -89,14 +143,26 @@
 (delete-selection-mode t)
 ;;better buffer rendering
 (setq redisplay-dont-pause t)
-;; Clipboard settings
+;;use system clipboard
 (setq x-select-enable-clipboard t)
 ;;set short confirm command
 (fset 'yes-or-no-p 'y-or-n-p)
 ;;
 ;;(setq ac-disable-faces nil)
-;;
-(setq compile-command "cd ../build && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON .. && make")
+;;set build command
+(setq compile-command "cd ../build && cmake -G \"Unix Makefiles\" -DCMAKE_EXPORT_COMPILE_COMMANDS=YES .. && make")
+;;auto complete quots ({},[],())
+(electric-pair-mode 1)
+;;move the cursor to a new window
+(setq split-window-keep-point t)
+;;automatically delete extra spaces and tabs at the end of lines
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+;;do not remember the password in the cache for gpg files
+(setq epa-file-cache-passphrase-for-symmetric-encryption nil)
+
+
+
+
 
 
 (require 'whitespace)
@@ -106,11 +172,14 @@
 
 
 
-;; show relative linum numbers
-(require 'linum-relative)
 
-;;cbf
-(defun linum-relative-set-on ()
+
+
+
+;;show relative linum numbers
+(require 'linum-relative)
+;;setup and turn on linum-relative mode
+(defun my:linum-relative ()
   (interactive)
   (linum-relative-mode t)
   ;;(setq linum-relative-backend 'display-line-numbers-mode) ;;use v26 for smooth performance
@@ -119,24 +188,37 @@
   (if (display-graphic-p) ;;set format
     (setq linum-relative-format " %3s")
     (setq linum-relative-format " %3s|")))
-
 ;;set hooks
-(add-hook 'emacs-lisp-mode-hook 'linum-relative-set-on)
-(add-hook 'c-mode-hook 'linum-relative-set-on)
-(add-hook 'c++-mode-hook 'linum-relative-set-on)
-(add-hook 'cc-mode-hook 'linum-relative-set-on)
-;(add-hook 'php-mode-hook 'linum-relative-set-on)
-;(add-hook 'python-mode-hook 'linum-relative-set-on)
-;(add-hook 'java-mode-hook 'linum-relative-set-on)
-;(add-hook 'perl-mode-hook 'linum-relative-set-on)
-;(add-hook 'shell-mode-hook 'linum-relative-set-on)
-;(add-hook 'sh-mode-hook 'linum-relative-set-on)
-;(add-hook 'sh-lisp-mode-hook 'linum-relative-set-on)
-;(add-hook 'xml-mode-hook 'linum-relative-set-on)
-;(add-hook 'css-mode-hook 'linum-relative-set-on)
-;(add-hook 'javascript-mode-hook 'linum-relative-set-on)
-;(add-hook 'makefile-mode-hook 'linum-relative-set-on)
-;(add-hook 'cmake-mode-hook 'linum-relative-set-on)
+(add-hook 'emacs-lisp-mode-hook 'my:linum-relative)
+(add-hook 'c-mode-hook 'my:linum-relative)
+(add-hook 'c++-mode-hook 'my:linum-relative)
+(add-hook 'java-mode-hook 'my:linum-relative)
+(add-hook 'objc-mode-hook 'my:linum-relative)
+(add-hook 'php-mode-hook 'my:linum-relative)
+(add-hook 'python-mode-hook 'my:linum-relative)
+(add-hook 'perl-mode-hook 'my:linum-relative)
+(add-hook 'shell-mode-hook 'my:linum-relative)
+(add-hook 'sh-mode-hook 'my:linum-relative)
+(add-hook 'sh-lisp-mode-hook 'my:linum-relative)
+(add-hook 'xml-mode-hook 'my:linum-relative)
+(add-hook 'css-mode-hook 'my:linum-relative)
+(add-hook 'javascript-mode-hook 'my:linum-relative)
+(add-hook 'makefile-mode-hook 'my:linum-relative)
+(add-hook 'cmake-mode-hook 'my:linum-relative)
+
+
+
+
+
+
+
+(setq paradox-lines-per-entry 2)
+(setq paradox-column-width-package 32)
+(setq paradox-column-width-version 16)
+
+
+
+
 
 
 
@@ -150,10 +232,18 @@
 
 
 
+
+
+
+
 ;;highlight blocks and quots
 (require 'paren)
 (show-paren-mode 1) ;; highlight quots
 ;;(setq show-paren-style 'expression) ;;highlight curent block
+
+
+
+
 
 
 
@@ -167,34 +257,44 @@
 
 
 
-;;start auto-complete with emacs
+
+
+
+;;
+;;yasnippet
+;;
+(require 'yasnippet)
+(require 'yasnippet-snippets)
+;(setq yas-snippet-dirs '("~/emacs.git/snippets"))
+(yas-global-mode 1)
+
+
+
+
+
+
+
+
+;; start auto-complete with emacs
 ;(require 'auto-complete)
-;;do default config for auto-complete
+;; do default config for auto-complete
 ;(ac-config-default)
 
-;;(setq ac-auto-start nil)
-;;(setq ac-auto-show-menu nil)
+;(setq ac-auto-start nil)
+;(setq ac-auto-show-menu nil)
 ;(setq ac-use-fuzzy t)
 ;(setq ac-ignore-case 'smart)
 
-;;let's define a function which initializes auto-complete-c-headers and gets called for c/c++ hooks
-;;#gcc -xc++ -E -v -
-(defun my:ac-c-header-init ()
-  (require 'auto-complete-c-headers)
-  (add-to-list 'ac-sources 'ac-source-c-headers)
-  (setq achead:include-directories
-    (append '("/cygdrive/d/projects/fcgi/src/include"
-              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++"
-              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/x86_64-pc-cygwin"
-              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/backward"
-              "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include"
-              "/usr/lib/clang/5.0.1/include"
-              "/usr/include/w32api"
-              "/usr/include")
-            achead:include-directories)))
-;;now let's call this function from c/c++ hooks
-(add-hook 'c++-mode-hook 'my:ac-c-header-init)
-(add-hook 'c-mode-hook 'my:ac-c-header-init)
+;;;let's define a function which initializes auto-complete-c-headers and gets called for c/c++ hooks
+;(defun my:ac-c-header-init ()
+;  (require 'auto-complete-c-headers)
+;  (add-to-list 'ac-sources 'ac-source-c-headers)
+;  (setq include-directories my:c-headers-path-system))
+;;; now let's call this function from c/c++ hooks
+;(my:ac-c-header-init)
+
+
+
 
 
 
@@ -219,6 +319,9 @@
 
 
 
+
+
+
 ;; Buffer Selection and ibuffer settings
 (require 'bs)
 (require 'ibuffer)
@@ -230,57 +333,6 @@
 
 
 
-;;
-;;company-irony-c-headers
-;;
-(require 'company-irony-c-headers)
-;; Load with `irony-mode` as a grouped backend
-(eval-after-load 'company
- '(add-to-list
-   'company-backends '(company-irony-c-headers company-irony)))
-
-
-
-
-
-;;
-;;company
-;;
-(require 'company)
-(add-hook 'after-init-hook 'global-company-mode)
-
-
-
-
-
-;;
-;;company-c-headers
-;;
-(require 'company-c-headers)
-(add-to-list 'company-backends 'company-c-headers)
-(setq company-c-headers-path-user '(
-    "/cygdrive/d/projects/fcgi/src/include"))
-(setq company-c-headers-path-system '(
-    "/cygdrive/d/projects/fcgi/src/include"
-    "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++"
-    "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/x86_64-pc-cygwin"
-    "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/backward"
-    "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include"
-    "/usr/lib/clang/5.0.1/include"
-    "/usr/include/w32api"
-    "/usr/include"))
-
-
-
-
-
-;;
-;;company-irony
-;;
-(require 'company-irony)
-(eval-after-load 'company
-  '(add-to-list 'company-backends 'company-irony))
-
 
 
 
@@ -290,37 +342,29 @@
 (require 'json)
 (require 'cl-lib)
 (require 'irony)
-(add-hook 'c++-mode-hook 'irony-mode)
-(add-hook 'c-mode-hook 'irony-mode)
-(add-hook 'objc-mode-hook 'irony-mode)
 ;; Windows performance tweaks
 (when (boundp 'w32-pipe-read-delay)
   (setq w32-pipe-read-delay 0))
 ;; Set the buffer size to 64K on Windows (from the original 4K)
 (when (boundp 'w32-pipe-buffer-size)
   (setq irony-server-w32-pipe-buffer-size (* 64 1024)))
+;;add path to search "compile_commands.json"
+;(setq irony-cdb-search-directory-list (append '("../build")))
+;; irony-mode hook that is called when irony is triggered
+(defun my:irony-mode-hook ()
+  "Custom irony mode hook to remap keys."
+  (define-key irony-mode-map [remap completion-at-point]
+    'irony-completion-at-point-async)
+  (define-key irony-mode-map [remap complete-symbol]
+    'irony-completion-at-point-async))
+;;start irony mode  
+(add-hook 'c++-mode-hook 'irony-mode)
+(add-hook 'c-mode-hook 'irony-mode)
+(add-hook 'objc-mode-hook 'irony-mode)
+(add-hook 'irony-mode-hook 'my:irony-mode-hook)
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-
-
-
-
-;;
-;;flycheck
-;;
-(require 'flycheck)
-(eval-after-load 'flycheck
-  '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
-
-
-
-
-;;
-;;yasnippet
-;;
-(require 'yasnippet)
-(require 'yasnippet-snippets)
-(yas-global-mode 1)
-(setq yas-snippet-dirs '("~/emacs.git/snippets"))
+;;binding autocomplete hotkey
+(global-set-key (kbd "M-RET") 'company-complete)
 
 
 
@@ -329,30 +373,121 @@
 ;;
 ;;company
 ;;
-;(require 'company)
-;(add-hook 'c-mode-common-hook 'company-mode)
-;(add-hook 'emacs-lisp-mode-hook 'company-mode)
-;(setq company-c-headers-path-user '("/cygdrive/d/projects/fcgi/src/include"))
+(require 'company)
+(require 'company-quickhelp)
+(setq company-idle-delay 0)
+(setq company-auto-complete t)
+(setq company-minimum-prefix-length 2)
+(setq company-transformers '(company-sort-by-occurrence))
+
+;(add-to-list 'company-backends '(company-capf company-keywords company-yasnippet company-tempo))
+;;;;(add-to-list 'company-backends 'company-ispell) ;ounly if text
+;;;;(add-to-list 'company-backends '(company-nxml company-css)) ;ounly if css
+;;;;(add-to-list 'company-backends '(company-clang  company-cmake)) - lomaet vydachu!!!
+;;;;(add-to-list 'company-backends '(company-dabbrev-code company-abbrev company-dabbrev)) - lomaen vydachu!!!
+;;;;(add-to-list 'company-backends 'company-files) - ne ponyatno???
+;(add-to-list 'company-backends '(company-gtags company-etags))
+;(add-to-list 'company-backends 'company-elisp)
+(add-hook 'after-init-hook 'global-company-mode)
+
+
+
+
+
+
+
+
+;;
+;;company-c-headers
+;;
+;(require 'company-c-headers)
+;;set path
+;(setq company-c-headers-path-user my:c-headers-path-user)
+;(setq company-c-headers-path-system my:c-headers-path-system)
+;;load backend
 ;(eval-after-load 'company
-;  '(add-to-list 'company-backends 'company-irony 'company-c-headers))
+;  '(add-to-list 'company-backends 'company-c-headers))
 
-;(setenv "PATH"
-;        (concat
-;         "/usr/local/bin" ";"
-;         "/home/Peretykin/.emacs.d" ";"
-;         "/home/Peretykin/.emacs.d/irony/bin" ";"
-;         (getenv "PATH")
-;         )
-;)
-;(setq exec-path (append '("/usr/local/bin" "/home/Peretykin/.emacs.d/irony/bin")
-;                        exec-path))
 
-(add-hook 'c++-mode-hook
-    (lambda ()
-        (setq flycheck-clang-language-standard "c++14")
-        (setq flycheck-gcc-language-standard "c++14")
-        (setq company-clang-arguments '("-std=c++14"))
-    )
-)
+
+
+
+
+
+;;
+;;company-irony-c-headers
+;;
+(require 'company-irony-c-headers)
+;;load backend
+;(eval-after-load 'company
+; '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
+
+
+
+
+
+
+
+;;
+;;company-irony
+;;
+(require 'company-irony)
+;;load backend
+(eval-after-load 'company
+  '(add-to-list 'company-backends 
+    '(company-keywords company-irony-c-headers company-irony)))
+;; company-irony setup, c-header completions
+(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
+
+
+
+
+
+   
+
+
+;;
+;;irony-eldoc
+;;
+(require 'irony-eldoc)
+(add-hook 'irony-mode-hook #'irony-eldoc)
+
+
+
+
+
+
+
+;;
+;;flycheck
+;;
+(require 'flycheck)
+;;set mode
+(add-hook 'irony-mode-hook (lambda ()
+  (setq flycheck-clang-language-standard "c++14")
+  (setq flycheck-gcc-language-standard "c++14")
+;  (setq company-clang-arguments '("-std=c++14"))
+  (flycheck-mode)))
+;;setup flycheck
+(eval-after-load 'flycheck
+  '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
+;;set local path
+(setq flycheck-clang-include-path 
+  (append my:c-headers-path-user my:c-headers-path-system))
+
+
+
+
+
+
+
+(require 'flycheck-pos-tip)
+(with-eval-after-load 'flycheck (flycheck-pos-tip-mode))
+
+
+
+
+
+
 
 (provide 'myinit)

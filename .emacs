@@ -7,6 +7,7 @@
 ;;include configs
 (add-to-list 'load-path "~/emacs.git/")
 (require 'myproxy)
+(require 'mysys)
 (require 'myinit)
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -15,7 +16,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (counsel irony auto-compile ac-php ac-php-core cpputils-cmake ac-clang magit))))
+    (## yasnippet-snippets linum-relative flycheck company-irony-c-headers company-irony company-c-headers buffer-move auto-complete))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

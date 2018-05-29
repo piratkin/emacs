@@ -6,8 +6,10 @@
     magit
     whitespace
     linum-relative
-	;font-lock
-	highlight-numbers
+    ;font-lock
+    ;xcscope
+    rtags
+    highlight-numbers
     ido
     paren
     bs
@@ -20,15 +22,17 @@
     ;auto-complete
     ;auto-complete-c-headers
     company
-	company-quickhelp
-    ;company-c-headers
-	company-irony-c-headers
+    company-quickhelp
+    company-c-headers
+    company-rtags
+    company-irony-c-headers
     company-irony
     irony
     irony-eldoc
     flycheck
-	flycheck-pos-tip
-    flycheck-irony))
+    flycheck-pos-tip
+    flycheck-irony
+    flycheck-rtags))
 ;; setup repos
 (load "package")
 (require 'package)
@@ -41,39 +45,46 @@
 (package-initialize)
 ; fetch the list of packages available
 (unless package-archive-contents
-  (package-refresh-contents))
+    (package-refresh-contents))
 ; install the missing packages
 (dolist (package package-list)
-  (unless (package-installed-p package)
-    (package-install package)))
+    (unless (package-installed-p package)
+        (package-install package)))
+
+
+
+
+
 
 
 
 
 
 ;;reverse-input-method RET russian-computer RET
-(defun reverse-input-method (input-method)
-  "Build the reverse mapping of single letters from INPUT-METHOD."
-  (interactive
-   (list (read-input-method-name "Use input method (default current): ")))
-  (if (and input-method (symbolp input-method))
-      (setq input-method (symbol-name input-method)))
-  (let ((current current-input-method)
-        (modifiers '(nil (control) (meta) (control meta))))
-    (when input-method
-      (activate-input-method input-method))
-    (when (and current-input-method quail-keyboard-layout)
-      (dolist (map (cdr (quail-map)))
-        (let* ((to (car map))
-               (from (quail-get-translation
-                      (cadr map) (char-to-string to) 1)))
-          (when (and (characterp from) (characterp to))
-            (dolist (mod modifiers)
-              (define-key local-function-key-map
-                (vector (append mod (list from)))
-                (vector (append mod (list to)))))))))
-    (when input-method
-      (activate-input-method current))))
+;(defun reverse-input-method (input-method)
+;  "Build the reverse mapping of single letters from INPUT-METHOD."
+;  (interactive
+;   (list (read-input-method-name "Use input method (default current): ")))
+;  (if (and input-method (symbolp input-method))
+;      (setq input-method (symbol-name input-method)))
+;  (let ((current current-input-method)
+;        (modifiers '(nil (control) (meta) (control meta))))
+;    (when input-method
+;      (activate-input-method input-method))
+;    (when (and current-input-method quail-keyboard-layout)
+;      (dolist (map (cdr (quail-map)))
+;        (let* ((to (car map))
+;               (from (quail-get-translation
+;                      (cadr map) (char-to-string to) 1)))
+;          (when (and (characterp from) (characterp to))
+;            (dolist (mod modifiers)
+;              (define-key local-function-key-map
+;                (vector (append mod (list from)))
+;                (vector (append mod (list to)))))))))
+;    (when input-method
+;      (activate-input-method current))))
+
+
 
 
 
@@ -124,12 +135,19 @@
 
 
 
+
+
+
+
+
 ;;
 ;;font-lock
 ;;
 (require 'font-lock)
 (global-font-lock-mode             t)
 (setq font-lock-maximum-decoration t)
+
+
 
 
 
@@ -165,6 +183,18 @@
 
 
 
+
+
+
+(global-set-key (kbd "C-,") 'beginning-of-buffer)
+(global-set-key (kbd "C-.") 'end-of-buffer)
+
+
+
+
+
+
+
 (require 'whitespace)
 (setq whitespace-style '(face empty tabs lines-tail trailing))
 (setq whitespace-line-column 80)
@@ -176,45 +206,39 @@
 
 
 
+
+
 ;;show relative linum numbers
 (require 'linum-relative)
 ;;setup and turn on linum-relative mode
 (defun my:linum-relative ()
-  (interactive)
-  (linum-relative-mode t)
-  ;;(setq linum-relative-backend 'display-line-numbers-mode) ;;use v26 for smooth performance
-  (setq linum-relative-current-symbol "") ;;set current line number
-  (set-face-foreground 'linum "#008080") ;;linum relative foreground color
-  (if (display-graphic-p) ;;set format
-    (setq linum-relative-format " %3s")
-    (setq linum-relative-format " %3s|")))
+    (interactive)
+    (linum-relative-mode t)
+    ;;(setq linum-relative-backend 'display-line-numbers-mode) ;;use v26 for smooth performance
+    (setq linum-relative-current-symbol "") ;;set current line number
+    (set-face-foreground 'linum "#008080") ;;linum relative foreground color
+    (if (display-graphic-p) ;;set format
+        (setq linum-relative-format " %3s")
+        (setq linum-relative-format " %3s|")))
 ;;set hooks
 (add-hook 'emacs-lisp-mode-hook 'my:linum-relative)
 (add-hook 'c-mode-hook 'my:linum-relative)
 (add-hook 'c++-mode-hook 'my:linum-relative)
-(add-hook 'java-mode-hook 'my:linum-relative)
-(add-hook 'objc-mode-hook 'my:linum-relative)
-(add-hook 'php-mode-hook 'my:linum-relative)
-(add-hook 'python-mode-hook 'my:linum-relative)
-(add-hook 'perl-mode-hook 'my:linum-relative)
-(add-hook 'shell-mode-hook 'my:linum-relative)
-(add-hook 'sh-mode-hook 'my:linum-relative)
-(add-hook 'sh-lisp-mode-hook 'my:linum-relative)
-(add-hook 'xml-mode-hook 'my:linum-relative)
-(add-hook 'css-mode-hook 'my:linum-relative)
-(add-hook 'javascript-mode-hook 'my:linum-relative)
-(add-hook 'makefile-mode-hook 'my:linum-relative)
-(add-hook 'cmake-mode-hook 'my:linum-relative)
+;(add-hook 'java-mode-hook 'my:linum-relative)
+;(add-hook 'objc-mode-hook 'my:linum-relative)
+;(add-hook 'php-mode-hook 'my:linum-relative)
+;(add-hook 'python-mode-hook 'my:linum-relative)
+;(add-hook 'perl-mode-hook 'my:linum-relative)
+;(add-hook 'shell-mode-hook 'my:linum-relative)
+;(add-hook 'sh-mode-hook 'my:linum-relative)
+;(add-hook 'sh-lisp-mode-hook 'my:linum-relative)
+;(add-hook 'xml-mode-hook 'my:linum-relative)
+;(add-hook 'css-mode-hook 'my:linum-relative)
+;(add-hook 'javascript-mode-hook 'my:linum-relative)
+;(add-hook 'makefile-mode-hook 'my:linum-relative)
+;(add-hook 'cmake-mode-hook 'my:linum-relative)
 
 
-
-
-
-
-
-(setq paradox-lines-per-entry 2)
-(setq paradox-column-width-package 32)
-(setq paradox-column-width-version 16)
 
 
 
@@ -236,10 +260,12 @@
 
 
 
+
 ;;highlight blocks and quots
 (require 'paren)
 (show-paren-mode 1) ;; highlight quots
-;;(setq show-paren-style 'expression) ;;highlight curent block
+;;highlight curent block
+;(setq show-paren-style 'expression)
 
 
 
@@ -247,13 +273,19 @@
 
 
 
+
+;;
+;; buffer-move
+;;
 (require 'buffer-move)
-(global-set-key (kbd "<C-S-up>") 'buf-move-up)
-(global-set-key (kbd "<C-S-down>") 'buf-move-down)
-(global-set-key (kbd "<C-S-left>") 'buf-move-left)
-(global-set-key (kbd "<C-S-right>") 'buf-move-right)
+(global-set-key (kbd "M-s <up>") 'buf-move-up)
+(global-set-key (kbd "M-s <down>") 'buf-move-down)
+(global-set-key (kbd "M-s <left>") 'buf-move-left)
+(global-set-key (kbd "M-s <right>") 'buf-move-right)
 ;;(setq buffer-move-stay-after-swap t)
 ;;(setq buffer-move-behavior 'move)
+
+
 
 
 
@@ -299,6 +331,7 @@
 
 
 
+
 ;; ; turn on Semantic
 ;; (semantic-mode 1)
 ;; ; let's define a function which adds semantic as a suggestion backend to auto complete
@@ -322,13 +355,12 @@
 
 
 
+
+
 ;; Buffer Selection and ibuffer settings
 (require 'bs)
-(require 'ibuffer)
-(defalias 'list-buffers 'ibuffer) ;;separate list of buffers when clicked C-x C-b
-(iswitchb-mode 1)
-;; disable dired buffer
-(put 'dired-find-alternate-file 'disabled nil)
+(global-set-key (kbd "C-x C-b") 'bs-show)
+
 
 
 
@@ -344,20 +376,20 @@
 (require 'irony)
 ;; Windows performance tweaks
 (when (boundp 'w32-pipe-read-delay)
-  (setq w32-pipe-read-delay 0))
+    (setq w32-pipe-read-delay 0))
 ;; Set the buffer size to 64K on Windows (from the original 4K)
 (when (boundp 'w32-pipe-buffer-size)
-  (setq irony-server-w32-pipe-buffer-size (* 64 1024)))
+    (setq irony-server-w32-pipe-buffer-size (* 64 1024)))
 ;;add path to search "compile_commands.json"
 ;(setq irony-cdb-search-directory-list (append '("../build")))
 ;; irony-mode hook that is called when irony is triggered
 (defun my:irony-mode-hook ()
-  "Custom irony mode hook to remap keys."
-  (define-key irony-mode-map [remap completion-at-point]
-    'irony-completion-at-point-async)
-  (define-key irony-mode-map [remap complete-symbol]
-    'irony-completion-at-point-async))
-;;start irony mode  
+    "Custom irony mode hook to remap keys."
+    (define-key irony-mode-map [remap completion-at-point]
+        'irony-completion-at-point-async)
+    (define-key irony-mode-map [remap complete-symbol]
+        'irony-completion-at-point-async))
+;;start irony mode
 (add-hook 'c++-mode-hook 'irony-mode)
 (add-hook 'c-mode-hook 'irony-mode)
 (add-hook 'objc-mode-hook 'irony-mode)
@@ -370,25 +402,22 @@
 
 
 
+
+
+
+
 ;;
 ;;company
 ;;
 (require 'company)
 (require 'company-quickhelp)
+(require 'company-keywords)
 (setq company-idle-delay 0)
 (setq company-auto-complete t)
-(setq company-minimum-prefix-length 2)
+(setq company-minimum-prefix-length 3)
 (setq company-transformers '(company-sort-by-occurrence))
-
-;(add-to-list 'company-backends '(company-capf company-keywords company-yasnippet company-tempo))
-;;;;(add-to-list 'company-backends 'company-ispell) ;ounly if text
-;;;;(add-to-list 'company-backends '(company-nxml company-css)) ;ounly if css
-;;;;(add-to-list 'company-backends '(company-clang  company-cmake)) - lomaet vydachu!!!
-;;;;(add-to-list 'company-backends '(company-dabbrev-code company-abbrev company-dabbrev)) - lomaen vydachu!!!
-;;;;(add-to-list 'company-backends 'company-files) - ne ponyatno???
-;(add-to-list 'company-backends '(company-gtags company-etags))
-;(add-to-list 'company-backends 'company-elisp)
 (add-hook 'after-init-hook 'global-company-mode)
+
 
 
 
@@ -400,13 +429,12 @@
 ;;
 ;;company-c-headers
 ;;
-;(require 'company-c-headers)
+(require 'company-c-headers)
 ;;set path
-;(setq company-c-headers-path-user my:c-headers-path-user)
-;(setq company-c-headers-path-system my:c-headers-path-system)
-;;load backend
-;(eval-after-load 'company
-;  '(add-to-list 'company-backends 'company-c-headers))
+(setq company-c-headers-path-user my:c-headers-path-user)
+(setq company-c-headers-path-system my:c-headers-path-system)
+
+
 
 
 
@@ -418,9 +446,82 @@
 ;;company-irony-c-headers
 ;;
 (require 'company-irony-c-headers)
-;;load backend
-;(eval-after-load 'company
-; '(add-to-list 'company-backends '(company-irony-c-headers company-irony)))
+
+
+
+
+
+
+
+
+
+(require 'rtags)
+(require 'company-rtags)
+(setq rtags-completions-enabled t)
+(setq rtags-autostart-diagnostics t)
+(rtags-enable-standard-keybindings)
+;;hook mode
+(add-hook 'c-mode-hook 'rtags-start-process-unless-running)
+(add-hook 'c++-mode-hook 'rtags-start-process-unless-running)
+(add-hook 'objc-mode-hook 'rtags-start-process-unless-running)
+;;user functions
+(defun my:rtags-find-symbol-at-point (&optional prefix)
+    (interactive "P")
+    (if (and (not (rtags-find-symbol-at-point prefix)) rtags-last-request-not-indexed)
+        (gtags-find-tag)))
+(defun my:rtags-find-references-at-point (&optional prefix)
+    (interactive "P")
+    (if (and (not (rtags-find-references-at-point prefix)) rtags-last-request-not-indexed)
+        (gtags-find-rtag)))
+;;binding keys
+(global-set-key (kbd "M-.") 'my:rtags-find-symbol-at-point)
+(global-set-key (kbd "M-,") 'my:rtags-find-references-at-point)
+(global-set-key (kbd "C-;") 'rtags-location-stack-back)
+(global-set-key (kbd "C-'") 'rtags-location-stack-forward)
+;;if onunly c/c++ mode
+;(define-key c-mode-base-map (kbd "M-.") 'my:rtags-find-symbol-at-point)
+;(define-key c-mode-base-map (kbd "M-,") 'my:rtags-find-references-at-point)
+;(define-key c-mode-base-map (kbd "C-;") 'rtags-location-stack-back)
+;(define-key c-mode-base-map (kbd "C-'") 'rtags-location-stack-forward)
+;;other imposible commands
+;;'rtags-find-symbol-at-point
+;;'rtags-find-references-at-point
+;;'rtags-references-tree
+;;'rtags-find-virtuals-at-point
+;;'rtags-print-enum-value-at-point
+;;'rtags-find-all-references-at-point
+;;'rtags-cycle-through-diagnostics
+;;'rtags-find-symbol
+;;'rtags-find-references
+;;'rtags-location-stack-back
+;;'rtags-location-stack-forward
+;;'rtags-diagnostics
+;;'rtags-compile-file
+;;'rtags-guess-function-at-point
+;;'rtags-dependency-tree
+;;'rtags-dependency-tree-all
+;;'rtags-reparse-file
+;;'rtags-preprocess-file
+;;'rtags-rename-symbol
+;;'rtags-symbol-info
+;;'rtags-display-summary-as-message
+;;'rtags-display-summary
+;;'rtags-goto-offset
+;;'rtags-find-file
+;;'rtags-fixit
+;;'rtags-copy-and-print-current-location
+;;'rtags-apply-fixit-at-point
+;;'rtags-show-rtags-buffer
+;;'rtags-make-member
+;;'rtags-imenu
+;;'rtags-taglist
+;;'rtags-print-class-hierarchy
+;;'rtags-print-source-arguments
+;;'rtags-find-functions-called-by-this-function
+;;'rtags-list-results
+;;'rtags-location-stack-visualize
+
+
 
 
 
@@ -432,18 +533,32 @@
 ;;company-irony
 ;;
 (require 'company-irony)
+;;company-irony setup, c-header completions
+(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
 ;;load backend
 (eval-after-load 'company
-  '(add-to-list 'company-backends 
-    '(company-keywords company-irony-c-headers company-irony)))
-;; company-irony setup, c-header completions
-(add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
+    '(add-to-list 'company-backends '(
+        company-keywords
+        company-irony-c-headers
+        company-c-headers
+        company-irony
+        company-rtags)))
+;;other backends
+;'(company-capf company-keywords company-yasnippet company-tempo)
+;'company-ispell ;ounly if text
+;'(company-nxml company-css) ;ounly if css
+;'(company-clang  company-cmake) - lomaet vydachu!!!
+;'(company-dabbrev-code company-abbrev company-dabbrev) - lomaen vydachu!!!
+;'company-files - ne ponyatno???
+;'(company-gtags company-etags)
+;'company-elisp
 
 
 
 
 
-   
+
+
 
 
 ;;
@@ -458,22 +573,29 @@
 
 
 
+
+
 ;;
 ;;flycheck
 ;;
 (require 'flycheck)
+(require 'flycheck-rtags)
 ;;set mode
 (add-hook 'irony-mode-hook (lambda ()
-  (setq flycheck-clang-language-standard "c++14")
-  (setq flycheck-gcc-language-standard "c++14")
-;  (setq company-clang-arguments '("-std=c++14"))
-  (flycheck-mode)))
+    (setq flycheck-clang-language-standard "c++14")
+    (setq flycheck-gcc-language-standard "c++14")
+    (setq irony-additional-clang-options '("-std=c++14"))
+    (setq company-clang-arguments '("-std=c++14"))
+    (flycheck-mode)))
 ;;setup flycheck
 (eval-after-load 'flycheck
-  '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
+    '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
 ;;set local path
-(setq flycheck-clang-include-path 
-  (append my:c-headers-path-user my:c-headers-path-system))
+(setq flycheck-clang-include-path
+    (append my:c-headers-path-user my:c-headers-path-system))
+
+
+
 
 
 
@@ -483,6 +605,32 @@
 
 (require 'flycheck-pos-tip)
 (with-eval-after-load 'flycheck (flycheck-pos-tip-mode))
+
+
+
+
+
+
+
+
+
+;;(require 'xcscope)
+;;(cscope-setup)
+
+
+
+
+
+
+
+
+
+
+;;http://syamajala.github.io/c-ide.html
+;;(cmake-ide-setup)
+;;((nil . ((cmake-ide-build-dir . "<PATH_TO_PROJECT_BUILD_DIRECTORY>"))))
+
+
 
 
 

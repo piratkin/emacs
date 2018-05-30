@@ -9,7 +9,7 @@
     "/usr/lib/gcc/x86_64-pc-cygwin/6.4.0/include/c++/backward"))
 
 ;;
-;;exclude from project file
+;;exclude to project file
 ;;
 
 ;;user hederfile path

@@ -582,10 +582,6 @@
 (require 'flycheck-rtags)
 ;;set mode
 (add-hook 'irony-mode-hook (lambda ()
-    (setq flycheck-clang-language-standard "c++14")
-    (setq flycheck-gcc-language-standard "c++14")
-    (setq irony-additional-clang-options '("-std=c++14"))
-    (setq company-clang-arguments '("-std=c++14"))
     (flycheck-mode)))
 ;;setup flycheck
 (eval-after-load 'flycheck

@@ -110,6 +110,16 @@
 (setq-default cursor-in-non-selected-windows nil)
 ;;hidi scrolbar
 (menu-bar-mode -1)
+;; scroll one line
+(setq scroll-margin 1)
+;; normal scroll
+(setq scroll-conservatively 10000)
+;; timeout lock font
+(setq jit-lock-defer-time 0.01)
+;;normal mouse wheele
+(setq mouse-wheel-scroll-amount '(2 ((shift) . 2)))
+(setq mouse-wheel-progressive-speed nil)
+(setq mouse-wheel-follow-mouse 't)
 ;;hide toolbar
 (tool-bar-mode -1)
 ;;hide scrollbar
@@ -131,6 +141,36 @@
 ;(add-hook 'prog-mode-hook #'semantic-idle-local-symbol-highlight-mode)
 ;;highlight-numbers
 (add-hook 'prog-mode-hook #'highlight-numbers-mode)
+
+
+
+
+
+
+
+
+
+
+;; load project file
+(defun my:project-load ()
+  (let ((current-path (buffer-file-name))
+        (project-name '".project")
+         temp-path)
+      (while current-path
+        (setq current-path (file-name-directory (directory-file-name current-path)))
+        (if (equal current-path temp-path)
+            (progn
+             (setq current-path nil)
+             (message (concat project-name ".el not found!")))
+          (if (file-exists-p (concat current-path project-name ".el"))
+              (progn
+               (load (concat current-path project-name ".el"))
+               (message (concat "load file: " current-path project-name ".el")
+               (setq current-path nil)))
+            (message (concat "try: " current-path project-name ".el"))))
+        (setq temp-path current-path))))
+(add-hook 'emacs-lisp-mode-hook 'my:project-load)
+
 
 
 
@@ -163,6 +203,7 @@
 (setq redisplay-dont-pause t)
 ;;use system clipboard
 (setq x-select-enable-clipboard t)
+(setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
 ;;set short confirm command
 (fset 'yes-or-no-p 'y-or-n-p)
 ;;
@@ -297,8 +338,16 @@
 ;;
 (require 'yasnippet)
 (require 'yasnippet-snippets)
+;(yas-global-mode 1)
 ;(setq yas-snippet-dirs '("~/emacs.git/snippets"))
-(yas-global-mode 1)
+;;set on yas
+(defun my:yas-mode-on ()
+    (yas-minor-mode 1))
+;;hook setup yas mode
+(add-hook 'emacs-lisp-mode-hook 'my:yas-mode-on)
+(add-hook 'c-mode-hook 'my:yas-mode-on)
+(add-hook 'c++-mode-hook 'my:yas-mode-on)
+(add-hook 'php-mode-hook 'my:yas-mode-on)
 
 
 
@@ -384,19 +433,17 @@
 ;(setq irony-cdb-search-directory-list (append '("../build")))
 ;; irony-mode hook that is called when irony is triggered
 (defun my:irony-mode-hook ()
-    "Custom irony mode hook to remap keys."
-    (define-key irony-mode-map [remap completion-at-point]
-        'irony-completion-at-point-async)
-    (define-key irony-mode-map [remap complete-symbol]
-        'irony-completion-at-point-async))
+   "Custom irony mode hook to remap keys."
+   (define-key irony-mode-map [remap completion-at-point]
+       'irony-completion-at-point-async)
+   (define-key irony-mode-map [remap complete-symbol]
+     'irony-completion-at-point-async))
 ;;start irony mode
 (add-hook 'c++-mode-hook 'irony-mode)
 (add-hook 'c-mode-hook 'irony-mode)
 (add-hook 'objc-mode-hook 'irony-mode)
 (add-hook 'irony-mode-hook 'my:irony-mode-hook)
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-;;binding autocomplete hotkey
-(global-set-key (kbd "M-RET") 'company-complete)
 
 
 
@@ -412,11 +459,22 @@
 (require 'company)
 (require 'company-quickhelp)
 (require 'company-keywords)
-(setq company-idle-delay 0)
-(setq company-auto-complete t)
-(setq company-minimum-prefix-length 3)
+;; fast auto-complete
+(setq company-idle-delay 0.2
+      company-minimum-prefix-length 2
+      company-auto-complete t)
 (setq company-transformers '(company-sort-by-occurrence))
 (add-hook 'after-init-hook 'global-company-mode)
+;; add space after cancel autocomplete
+(defun my:company-set-space ()
+    (interactive)
+    (company-cancel 'abort)
+    (insert " "))
+;;binding autocomplete hotkey
+(global-set-key (kbd "M-RET") 'company-complete-common-or-cycle)
+(define-key company-active-map (kbd "SPC") 'my:company-set-space)
+(define-key company-active-map (kbd "TAB") 'company-select-next)
+(define-key company-active-map (kbd "<backtab>") 'company-select-previous)
 
 
 
@@ -459,11 +517,6 @@
 (require 'company-rtags)
 (setq rtags-completions-enabled t)
 (setq rtags-autostart-diagnostics t)
-(rtags-enable-standard-keybindings)
-;;hook mode
-(add-hook 'c-mode-hook 'rtags-start-process-unless-running)
-(add-hook 'c++-mode-hook 'rtags-start-process-unless-running)
-(add-hook 'objc-mode-hook 'rtags-start-process-unless-running)
 ;;user functions
 (defun my:rtags-find-symbol-at-point (&optional prefix)
     (interactive "P")
@@ -473,11 +526,22 @@
     (interactive "P")
     (if (and (not (rtags-find-references-at-point prefix)) rtags-last-request-not-indexed)
         (gtags-find-rtag)))
-;;binding keys
-(global-set-key (kbd "M-.") 'my:rtags-find-symbol-at-point)
-(global-set-key (kbd "M-,") 'my:rtags-find-references-at-point)
-(global-set-key (kbd "C-;") 'rtags-location-stack-back)
-(global-set-key (kbd "C-'") 'rtags-location-stack-forward)
+(defun my:rtags-mode-on ()
+    ;;start rdm
+    (rtags-start-process-maybe)
+    ;;set mode
+    (rtags-start-process-unless-running)
+    ;;binding keys
+    (rtags-enable-standard-keybindings)
+    (global-set-key (kbd "M-.") 'my:rtags-find-symbol-at-point)
+    (global-set-key (kbd "M-,") 'my:rtags-find-references-at-point)
+    (global-set-key (kbd "C-;") 'rtags-location-stack-back)
+    (global-set-key (kbd "C-'") 'rtags-location-stack-forward))
+;;hook start mode
+(add-hook 'emacs-lisp-mode-hook 'my:rtags-mode-on)
+(add-hook 'c-mode-hook 'my:rtags-mode-on)
+(add-hook 'c++-mode-hook 'my:rtags-mode-on)
+(add-hook 'objc-mode-hook 'my:rtags-mode-on)
 ;;if onunly c/c++ mode
 ;(define-key c-mode-base-map (kbd "M-.") 'my:rtags-find-symbol-at-point)
 ;(define-key c-mode-base-map (kbd "M-,") 'my:rtags-find-references-at-point)
@@ -541,8 +605,8 @@
         company-keywords
         company-irony-c-headers
         company-c-headers
-        company-irony
-        company-rtags)))
+;        company-rtags
+        company-irony)))
 ;;other backends
 ;'(company-capf company-keywords company-yasnippet company-tempo)
 ;'company-ispell ;ounly if text

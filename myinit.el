@@ -151,35 +151,6 @@
 
 
 
-;; load project file
-(defun my:project-load ()
-  (let ((current-path (buffer-file-name))
-        (project-name '".project")
-         temp-path)
-      (while current-path
-        (setq current-path (file-name-directory (directory-file-name current-path)))
-        (if (equal current-path temp-path)
-            (progn
-             (setq current-path nil)
-             (message (concat project-name ".el not found!")))
-          (if (file-exists-p (concat current-path project-name ".el"))
-              (progn
-               (load (concat current-path project-name ".el"))
-               (message (concat "load file: " current-path project-name ".el")
-               (setq current-path nil)))
-            (message (concat "try: " current-path project-name ".el"))))
-        (setq temp-path current-path))))
-(add-hook 'emacs-lisp-mode-hook 'my:project-load)
-
-
-
-
-
-
-
-
-
-
 ;;
 ;;font-lock
 ;;
@@ -203,7 +174,8 @@
 (setq redisplay-dont-pause t)
 ;;use system clipboard
 (setq x-select-enable-clipboard t)
-(setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+;(setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
+(setq interprogram-paste-function 'x-selection-value)
 ;;set short confirm command
 (fset 'yes-or-no-p 'y-or-n-p)
 ;;
@@ -489,8 +461,9 @@
 ;;
 (require 'company-c-headers)
 ;;set path
-(setq company-c-headers-path-user my:c-headers-path-user)
 (setq company-c-headers-path-system my:c-headers-path-system)
+(if (boundp 'my:c-headers-path-user)
+    (setq company-c-headers-path-user my:c-headers-path-user))
 
 
 
@@ -652,7 +625,10 @@
     '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
 ;;set local path
 (setq flycheck-clang-include-path
-    (append my:c-headers-path-user my:c-headers-path-system))
+  (append my:c-headers-path-system))
+(if (boundp 'my:c-headers-path-user)
+  (setq flycheck-clang-include-path
+    (append my:c-headers-path-user)))
 
 
 
@@ -690,6 +666,43 @@
 ;;(cmake-ide-setup)
 ;;((nil . ((cmake-ide-build-dir . "<PATH_TO_PROJECT_BUILD_DIRECTORY>"))))
 
+
+
+
+
+
+
+
+
+;;
+;; load project file
+;;
+(defun my:project-load ()
+  (let ((current-path (buffer-file-name))
+        (project-file-name '".project")
+         temp-path
+         test-path)
+      (while current-path
+        (setq current-path (file-name-directory (directory-file-name current-path)))
+        (if (equal current-path temp-path)
+            (progn
+              (setq current-path nil)
+              (message (concat project-file-name ".el not found!")))
+          (progn
+            (setq test-path (concat current-path project-file-name))
+            (if (file-exists-p (concat test-path ".el"))
+                (progn
+				  (makunbound 'my:project-name)
+                  (load test-path)
+                  (message (concat "load file: " test-path ".el")
+                  (setq current-path nil)))
+              (message (concat "try: " test-path ".el")))))
+        (setq temp-path current-path)))
+      (if (boundp 'my:project-name)
+		(message (concat "Project: [" my:project-name "] complete!"))))
+(add-hook 'emacs-lisp-mode-hook 'my:project-load)
+(add-hook 'c-mode-hook 'my:project-load)
+(add-hook 'c++-mode-hook 'my:project-load)
 
 
 

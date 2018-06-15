@@ -150,6 +150,23 @@
 
 
 
+;;
+;;hide unused define
+;;
+(defun my:hide-defines ()
+  (interactive)
+  (hide-ifdef-mode t)
+  (setq hide-ifdef-shadow t)
+  (hide-ifdefs))
+;;set hooks
+(add-hook 'c-mode-hook 'my:hide-defines)
+(add-hook 'c++-mode-hook 'my:hide-defines)
+
+
+
+
+
+
 
 ;;
 ;;font-lock

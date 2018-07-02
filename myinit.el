@@ -96,8 +96,6 @@
 (load-theme 'wombat)
 ;;custom name
 (setq frame-title-format "GNU Emacs: %b")
-;; turn off line wrapping
-(setq-default truncate-lines 1)
 ;; Display file size/time in mode-line
 (setq display-time-24hr-format t) ;; 24-hour time format in mode-line
 (display-time-mode t) ;; show hours in mode-line
@@ -142,6 +140,24 @@
 ;;highlight-numbers
 (add-hook 'prog-mode-hook #'highlight-numbers-mode)
 
+
+
+
+
+
+
+
+;;
+;;truncate-lines
+;;
+(defun my:truncate-lines ()
+  (interactive)
+  ;; turn off line wrapping
+  (setq-default truncate-lines 1))
+;;set hooks
+;(add-hook 'emacs-lisp-mode-hook 'my:truncate-lines)
+(add-hook 'c-mode-hook 'my:truncate-lines)
+(add-hook 'c++-mode-hook 'my:truncate-lines)
 
 
 
@@ -237,12 +253,12 @@
 (add-hook 'emacs-lisp-mode-hook 'my:linum-relative)
 (add-hook 'c-mode-hook 'my:linum-relative)
 (add-hook 'c++-mode-hook 'my:linum-relative)
+(add-hook 'shell-mode-hook 'my:linum-relative)
 ;(add-hook 'java-mode-hook 'my:linum-relative)
 ;(add-hook 'objc-mode-hook 'my:linum-relative)
 ;(add-hook 'php-mode-hook 'my:linum-relative)
 ;(add-hook 'python-mode-hook 'my:linum-relative)
 ;(add-hook 'perl-mode-hook 'my:linum-relative)
-;(add-hook 'shell-mode-hook 'my:linum-relative)
 ;(add-hook 'sh-mode-hook 'my:linum-relative)
 ;(add-hook 'sh-lisp-mode-hook 'my:linum-relative)
 ;(add-hook 'xml-mode-hook 'my:linum-relative)
@@ -692,14 +708,14 @@
             (setq test-path (concat current-path project-file-name))
             (if (file-exists-p (concat test-path ".el"))
                 (progn
-				  (makunbound 'my:project-name)
+                  (makunbound 'my:project-name)
                   (load test-path)
                   (message (concat "load file: " test-path ".el")
                   (setq current-path nil)))
               (message (concat "try: " test-path ".el")))))
         (setq temp-path current-path)))
       (if (boundp 'my:project-name)
-		(message (concat "Project: [" my:project-name "] complete!"))))
+        (message (concat "Project: [" my:project-name "] complete!"))))
 (add-hook 'emacs-lisp-mode-hook 'my:project-load)
 (add-hook 'c-mode-hook 'my:project-load)
 (add-hook 'c++-mode-hook 'my:project-load)

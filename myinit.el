@@ -612,13 +612,13 @@
         company-irony-c-headers
         company-c-headers
 ;        company-rtags
-        company-irony)))
+        company-irony
+        company-dabbrev-code)))
 ;;other backends
 ;'(company-capf company-keywords company-yasnippet company-tempo)
 ;'company-ispell ;ounly if text
 ;'(company-nxml company-css) ;ounly if css
 ;'(company-clang  company-cmake) - lomaet vydachu!!!
-;'(company-dabbrev-code company-abbrev company-dabbrev) - lomaen vydachu!!!
 ;'company-files - ne ponyatno???
 ;'(company-gtags company-etags)
 ;'company-elisp
